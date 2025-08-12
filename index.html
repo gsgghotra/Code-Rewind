@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Code Rewind</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-clike.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-javascript.min.js"></script>
+    <!-- Prism Line Numbers CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/line-numbers/prism-line-numbers.css"
+      rel="stylesheet"
+    />
+
+    <!-- Prism Line Numbers JS -->
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/line-numbers/prism-line-numbers.min.js"></script>
+
+    <style>
+      .code-block {
+        font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+      }
+      pre.line-numbers {
+        user-select: text;
+        padding-left: 3.8em !important;
+        position: relative;
+      }
+      .copy-feedback {
+        animation: fadeInOut 2s ease-in-out;
+      }
+      @keyframes fadeInOut {
+        0%,
+        100% {
+          opacity: 0;
+        }
+        50% {
+          opacity: 1;
+        }
+      }
+      pre {
+        width: 98%;
+        position: relative;
+        padding: 1em;
+        border-radius: 6px;
+        overflow-x: auto;
+        background: #2d2d2d;
+        color: white;
+        width: 100%;
+        left: 10px;
+        display: grid;
+      }
+      pre.line-numbers {
+        position: relative; /* needed for line numbers */
+        padding-left: 3.8em; /* space for numbers */
+      }
+    </style>
+  </head>
+  <body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 shadow-sm">
+      <div class="max-w-6xl mx-auto px-4 py-4">
+        <div class="flex items-center space-x-3">
+          <div
+            class="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center"
+          >
+            <svg
+              class="w-5 h-5 text-white"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z"
+                clip-rule="evenodd"
+              ></path>
+            </svg>
+          </div>
+          <h1 class="text-2xl font-bold text-gray-900">Code Rewind</h1>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 py-8">
+      <!-- URL Input Section -->
+      <div
+        class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6"
+      >
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">
+          Retrieve Code History
+        </h2>
+        <div class="flex space-x-3">
+          <input
+            type="url"
+            id="codeUrl"
+            placeholder="Paste your code history link here..."
+            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+          />
+          <button
+            onclick="fetchCodeHistory()"
+            class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          >
+            Fetch Code
+          </button>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div
+        id="loadingState"
+        class="hidden bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center"
+      >
+        <div
+          class="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"
+        ></div>
+        <p class="text-gray-600">Fetching code history...</p>
+      </div>
+
+      <!-- Error State -->
+      <div
+        id="errorState"
+        class="hidden bg-red-50 border border-red-200 rounded-lg p-6 mb-6"
+      >
+        <div class="flex items-center space-x-3">
+          <svg
+            class="w-6 h-6 text-red-600"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+              clip-rule="evenodd"
+            ></path>
+          </svg>
+          <div>
+            <h3 class="text-red-800 font-medium">Error fetching code</h3>
+            <p id="errorMessage" class="text-red-600 text-sm mt-1"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Code Display Section -->
+      <div id="codeSection" class="hidden">
+        <!-- Code Info Header -->
+        <div
+          class="bg-white rounded-t-lg border border-gray-200 border-b-0 px-6 py-4"
+        >
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+              <h3 id="fileName" class="text-lg font-semibold text-gray-900">
+                code.js
+              </h3>
+              <span
+                id="fileSize"
+                class="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded"
+                >0 lines</span
+              >
+              <span id="lastModified" class="text-sm text-gray-500"
+                >Last modified: --</span
+              >
+            </div>
+            <div class="flex items-center space-x-2">
+              <button
+                onclick="copyToClipboard()"
+                class="flex items-center space-x-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+              >
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path
+                    d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"
+                  ></path>
+                  <path
+                    d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"
+                  ></path>
+                </svg>
+                <span>Copy</span>
+              </button>
+              <div
+                id="copyFeedback"
+                class="hidden copy-feedback text-green-600 text-sm font-medium"
+              >
+                Copied!
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Code Content -->
+        <div
+          class="bg-gray-900 rounded-b-lg border border-gray-200 border-t-0 overflow-hidden"
+        >
+          <pre
+            class="line-numbers language-js code-block text-sm p-4 whitespace-pre overflow-x-auto"
+          >
+            <code id="codeContent" class="language-js"></code>
+          </pre>
+        </div>
+      </div>
+
+      <!-- Sample Demo Notice -->
+      <div class="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="flex items-start space-x-3">
+          <svg
+            class="w-5 h-5 text-blue-600 mt-0.5"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+              clip-rule="evenodd"
+            ></path>
+          </svg>
+          <div>
+            <h4 class="text-blue-800 font-medium">Notice</h4>
+            <p class="text-blue-700 text-sm mt-1">
+              This tool just works for the Optimizely history URL format.
+            </p>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      let currentCode = "";
+
+      async function fetchCodeHistory() {
+        const urlInput = document.getElementById("codeUrl");
+        const url = urlInput.value.trim();
+
+        if (!url) {
+          showError("Please enter a valid URL");
+          return;
+        }
+
+        // Extract IDs from Optimizely history URL
+        const { project_id, id } = extractIdsFromUrl(url);
+        if (!project_id || !id) {
+          showError("Invalid Optimizely URL format");
+          return;
+        }
+
+        // Show loading state
+        showLoading();
+        hideError();
+        hideCodeSection();
+
+        try {
+          // Call your backend API
+          console.log("Fetching data for:", { project_id, id });
+          const response = await fetch(
+            `https://code-rewind.vercel.app/api/changes?project_id=${project_id}&id=${id}`
+          );
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Failed to fetch data");
+          }
+
+          const data = await response.json();
+          console.log("Fetched data:", data);
+
+          // Assume API returns array of changes; pick first if needed
+          const change = Array.isArray(data) ? data[0] : data;
+
+          function extractCustomCodeFromBefore(change) {
+            if (
+              !change.changes ||
+              !change.changes[0] ||
+              !change.changes[0].before
+            )
+              return "";
+
+            const beforeVariations = change.changes[0].before;
+
+            console.log(
+              "Entity Name:",
+              change.entity?.name || "Unknown Entity"
+            );
+
+            // Check if the items are direct custom_code objects (flat structure)
+            if (beforeVariations.length > 0 && beforeVariations[0].type) {
+              for (const item of beforeVariations) {
+                if (item.type === "custom_code" && item.value) {
+                  return item.value;
+                }
+              }
+            } else {
+              // Otherwise, assume nested structure with actions -> changes
+              for (const variation of beforeVariations) {
+                if (!variation.actions || variation.actions.length === 0)
+                  continue;
+
+                for (const action of variation.actions) {
+                  if (!action.changes) continue;
+
+                  for (const c of action.changes) {
+                    if (c.type === "custom_code" && c.value) {
+                      return c.value;
+                    }
+                  }
+                }
+              }
+            }
+
+            // No custom_code found
+            return "";
+          }
+
+          // Use it like this:
+          const codeContent = extractCustomCodeFromBefore(change);
+
+          displayCode({
+            fileName: change.entity.name || "Unknown.js",
+            lastModified: change.created
+              ? new Date(change.created).toLocaleDateString()
+              : new Date().toLocaleDateString(),
+
+            content: codeContent || "No custom_code found in changes[0].before",
+          });
+
+          hideLoading();
+        } catch (error) {
+          showError(error.message);
+          hideLoading();
+        }
+      }
+
+      function extractIdsFromUrl(url) {
+        try {
+          const parsedUrl = new URL(url);
+          const pathParts = parsedUrl.pathname.split("/").filter(Boolean);
+
+          // Find the index of "projects" and take the next element
+          const projectIndex = pathParts.indexOf("projects");
+          const project_id =
+            projectIndex !== -1 ? pathParts[projectIndex + 1] : null;
+
+          const id = parsedUrl.searchParams.get("id");
+          console.log("Extracted IDs:", { project_id, id });
+
+          return { project_id, id };
+        } catch {
+          return { project_id: null, id: null };
+        }
+      }
+
+      function displayCode(data) {
+        currentCode = data.content;
+
+        document.getElementById("fileName").textContent = data.fileName;
+        document.getElementById(
+          "lastModified"
+        ).textContent = `Created: ${data.lastModified}`;
+
+        const lines = data.content.split("\n");
+        document.getElementById(
+          "fileSize"
+        ).textContent = `${lines.length} lines`;
+
+        const codeElement = document.getElementById("codeContent");
+        codeElement.textContent = data.content;
+
+        Prism.highlightElement(codeElement); // highlight <code>, not <pre>
+
+        showCodeSection();
+      }
+
+      currentCode = data.content;
+
+      document.getElementById("fileName").textContent = data.fileName;
+      document.getElementById(
+        "lastModified"
+      ).textContent = `Last modified: ${data.lastModified}`;
+
+      const lines = data.content.split("\n");
+      document.getElementById("fileSize").textContent = `${lines.length} lines`;
+
+      document.getElementById("codeContent").textContent = data.content;
+
+      Prism.highlightElement(document.getElementById("codeContent")); // <--- important
+
+      showCodeSection();
+
+      async function copyToClipboard() {
+        try {
+          await navigator.clipboard.writeText(currentCode);
+          showCopyFeedback();
+        } catch (err) {
+          const textArea = document.createElement("textarea");
+          textArea.value = currentCode;
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand("copy");
+          document.body.removeChild(textArea);
+          showCopyFeedback();
+        }
+      }
+
+      function showCopyFeedback() {
+        const feedback = document.getElementById("copyFeedback");
+        feedback.classList.remove("hidden");
+        setTimeout(() => {
+          feedback.classList.add("hidden");
+        }, 2000);
+      }
+
+      function showLoading() {
+        document.getElementById("loadingState").classList.remove("hidden");
+      }
+
+      function hideLoading() {
+        document.getElementById("loadingState").classList.add("hidden");
+      }
+
+      function showError(message) {
+        document.getElementById("errorMessage").textContent = message;
+        document.getElementById("errorState").classList.remove("hidden");
+      }
+
+      function hideError() {
+        document.getElementById("errorState").classList.add("hidden");
+      }
+
+      function showCodeSection() {
+        document.getElementById("codeSection").classList.remove("hidden");
+      }
+
+      function hideCodeSection() {
+        document.getElementById("codeSection").classList.add("hidden");
+      }
+
+      // Allow Enter key to trigger fetch
+      document
+        .getElementById("codeUrl")
+        .addEventListener("keypress", function (e) {
+          if (e.key === "Enter") {
+            fetchCodeHistory();
+          }
+        });
+    </script>
+
+    <script>
+      (function () {
+        function c() {
+          var b = a.contentDocument || a.contentWindow.document;
+          if (b) {
+            var d = b.createElement("script");
+            d.innerHTML =
+              "window.__CF$cv$params={r:'96d7e5afe6b649f8',t:'MTc1NDkxNzAzMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";
+            b.getElementsByTagName("head")[0].appendChild(d);
+          }
+        }
+        if (document.body) {
+          var a = document.createElement("iframe");
+          a.height = 1;
+          a.width = 1;
+          a.style.position = "absolute";
+          a.style.top = 0;
+          a.style.left = 0;
+          a.style.border = "none";
+          a.style.visibility = "hidden";
+          document.body.appendChild(a);
+          if ("loading" !== document.readyState) c();
+          else if (window.addEventListener)
+            document.addEventListener("DOMContentLoaded", c);
+          else {
+            var e = document.onreadystatechange || function () {};
+            document.onreadystatechange = function (b) {
+              e(b);
+              "loading" !== document.readyState &&
+                ((document.onreadystatechange = e), c());
+            };
+          }
+        }
+      })();
+    </script>
+  </body>
+</html>
